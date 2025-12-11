@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
-const passwordRoutes = require('./routes/passwordRoutes');
-const logger = require('./middleware/logger');
+const passwordRoutes = require('./src/passwordRoutes');
+const logger = require('./src/logger');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,7 +17,7 @@ app.use('/api/passwords', passwordRoutes);
 
 // Root route
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.sendFile(path.join(__dirname, '.index.html'));
 });
 
 // 404 handler

@@ -4,7 +4,7 @@ const {
   generate, 
   generateMultiple, 
   getPasswordByQuery 
-} = require('../controllers/passwordController');
+} = require('./src/passwordController');
 
 router.get('/generate', getPasswordByQuery);
 

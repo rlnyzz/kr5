@@ -1,4 +1,4 @@
-const { generatePassword } = require('../utils/passwordGenerator');
+const { generatePassword } = require('./src/passwordGenerator');
 
 const generate = (req, res) => {
   try {
