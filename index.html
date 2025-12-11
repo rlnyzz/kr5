@@ -4,8 +4,492 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Генератор паролей - Express App</title>
-  <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(to right, #4a6fa5, #2c3e50);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    main {
+      padding: 30px;
+    }
+
+    section {
+      margin-bottom: 30px;
+      padding: 20px;
+      border-radius: 10px;
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+    }
+
+    h2 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #4a6fa5;
+    }
+
+    h3 {
+      color: #34495e;
+      margin: 15px 0 10px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .input-with-button {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="number"] {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    input[type="number"]:focus {
+      border-color: #4a6fa5;
+      outline: none;
+    }
+
+    .small-btn {
+      padding: 12px 15px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .small-btn:hover {
+      background: #545b62;
+    }
+
+    .options {
+      margin: 25px 0;
+    }
+
+    .option-group {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      margin: 12px 0;
+      font-size: 16px;
+      cursor: pointer;
+      color: #495057;
+    }
+
+    .checkbox-label input {
+      margin-right: 10px;
+      transform: scale(1.2);
+    }
+
+    .checkbox-label i {
+      margin-right: 8px;
+      color: #4a6fa5;
+    }
+
+    .action-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 25px 0;
+    }
+
+    button {
+      padding: 15px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    button i {
+      font-size: 18px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(to right, #4a6fa5, #3a5980);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(to right, #3a5980, #2a4560);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(74, 111, 165, 0.3);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(to right, #6c757d, #545b62);
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: linear-gradient(to right, #545b62, #3d4246);
+      transform: translateY(-2px);
+    }
+
+    .btn-success {
+      background: linear-gradient(to right, #28a745, #1e7e34);
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: linear-gradient(to right, #1e7e34, #145523);
+      transform: translateY(-2px);
+    }
+
+    .btn-info {
+      background: linear-gradient(to right, #17a2b8, #138496);
+      color: white;
+    }
+
+    .btn-info:hover {
+      background: linear-gradient(to right, #138496, #0d6670);
+      transform: translateY(-2px);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .result-section {
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      border: 1px solid #e0e0e0;
+      margin-top: 25px;
+    }
+
+    .password-display {
+      font-family: 'Courier New', monospace;
+      font-size: 1.4rem;
+      padding: 20px;
+      background: #f8f9fa;
+      border: 2px dashed #4a6fa5;
+      border-radius: 8px;
+      text-align: center;
+      margin: 15px 0;
+      word-break: break-all;
+      color: #2c3e50;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .multiple-passwords {
+      display: grid;
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    .password-item {
+      font-family: 'Courier New', monospace;
+      padding: 10px;
+      background: #f1f3f4;
+      border-radius: 5px;
+      border-left: 4px solid #4a6fa5;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .copy-small-btn {
+      background: #4a6fa5;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .password-strength {
+      margin-top: 25px;
+    }
+
+    .strength-meter {
+      height: 10px;
+      background: #e9ecef;
+      border-radius: 5px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+
+    .strength-bar {
+      height: 100%;
+      width: 50%;
+      background: linear-gradient(to right, #ff6b6b, #feca57, #1dd1a1);
+      transition: width 0.3s;
+    }
+
+    #strength-text {
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .api-info {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .endpoints {
+      display: grid;
+      gap: 15px;
+    }
+
+    .endpoint {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #4a6fa5;
+    }
+
+    .method {
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 14px;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .method.get {
+      background: #61affe;
+      color: white;
+    }
+
+    .method.post {
+      background: #49cc90;
+      color: white;
+    }
+
+    .endpoint code {
+      flex: 1;
+      font-family: 'Courier New', monospace;
+      color: #2c3e50;
+    }
+
+    .endpoint small {
+      color: #6c757d;
+    }
+
+    .server-info {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .status-loading, .status-success, .status-error {
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-loading {
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeaa7;
+    }
+
+    .status-success {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+
+    .status-error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .logs {
+      margin-top: 20px;
+    }
+
+    #logs {
+      max-height: 300px;
+      overflow-y: auto;
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 15px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .log-entry {
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      padding: 8px;
+      border-bottom: 1px solid #e0e0e0;
+      color: #495057;
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .log-time {
+      color: #6c757d;
+      margin-right: 10px;
+    }
+
+    .log-method {
+      font-weight: bold;
+      margin-right: 10px;
+    }
+
+    .log-method.get {
+      color: #61affe;
+    }
+
+    .log-method.post {
+      color: #49cc90;
+    }
+
+    footer {
+      background: #2c3e50;
+      color: white;
+      padding: 25px;
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    footer p {
+      margin: 10px 0;
+    }
+
+    .github-link {
+      margin-top: 15px;
+    }
+
+    .github-link a {
+      color: #4a6fa5;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .github-link a:hover {
+      text-decoration: underline;
+    }
+
+    .github-link i {
+      margin-right: 8px;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        margin: 10px;
+        border-radius: 10px;
+      }
+      
+      header {
+        padding: 20px;
+      }
+      
+      header h1 {
+        font-size: 2rem;
+      }
+      
+      main {
+        padding: 20px;
+      }
+      
+      .action-buttons {
+        grid-template-columns: 1fr;
+      }
+      
+      .endpoint {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+      }
+      
+      .endpoint code {
+        width: 100%;
+        overflow-x: auto;
+      }
+      
+      .password-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -127,6 +611,465 @@
     </footer>
   </div>
 
-  <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // DOM Elements
+      const lengthInput = document.getElementById('length');
+      const randomLengthBtn = document.getElementById('random-length');
+      const uppercaseCheckbox = document.getElementById('uppercase');
+      const lowercaseCheckbox = document.getElementById('lowercase');
+      const numbersCheckbox = document.getElementById('numbers');
+      const symbolsCheckbox = document.getElementById('symbols');
+      const generateBtn = document.getElementById('generate-btn');
+      const generateMultipleBtn = document.getElementById('generate-multiple-btn');
+      const copyBtn = document.getElementById('copy-btn');
+      const apiTestBtn = document.getElementById('api-test-btn');
+      const resultDiv = document.getElementById('result');
+      const multipleResultsDiv = document.getElementById('multiple-results');
+      const strengthBar = document.getElementById('strength-bar');
+      const strengthText = document.getElementById('strength-text');
+      const serverStatusDiv = document.getElementById('server-status');
+      const logsDiv = document.getElementById('logs');
+      const githubLink = document.getElementById('github-link');
+
+      // State
+      let currentPassword = '';
+      let logs = [];
+
+      // Initialize
+      checkServerStatus();
+      updateGithubLink();
+
+      // Event Listeners
+      randomLengthBtn.addEventListener('click', () => {
+        lengthInput.value = Math.floor(Math.random() * (128 - 8 + 1)) + 8;
+      });
+
+      generateBtn.addEventListener('click', generatePassword);
+      generateMultipleBtn.addEventListener('click', generateMultiplePasswords);
+      copyBtn.addEventListener('click', copyPassword);
+      apiTestBtn.addEventListener('click', testAPIEndpoints);
+
+      // Generate single password
+      async function generatePassword() {
+        const length = parseInt(lengthInput.value);
+        const includeUpper = uppercaseCheckbox.checked;
+        const includeLower = lowercaseCheckbox.checked;
+        const includeNumbers = numbersCheckbox.checked;
+        const includeSymbols = symbolsCheckbox.checked;
+
+        // Validation
+        if (!includeUpper && !includeLower && !includeNumbers && !includeSymbols) {
+          showAlert('Ошибка', 'Выберите хотя бы один тип символов!', 'error');
+          return;
+        }
+
+        if (length < 8 || length > 128) {
+          showAlert('Ошибка', 'Длина пароля должна быть от 8 до 128 символов.', 'error');
+          return;
+        }
+
+        try {
+          // Generate password via API
+          const response = await fetch('/api/passwords/generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              length: length,
+              uppercase: includeUpper,
+              lowercase: includeLower,
+              numbers: includeNumbers,
+              symbols: includeSymbols
+            })
+          });
+
+          const data = await response.json();
+          
+          if (data.success) {
+            currentPassword = data.password;
+            resultDiv.textContent = currentPassword;
+            multipleResultsDiv.innerHTML = '';
+            
+            // Update password strength
+            updatePasswordStrength(currentPassword);
+            
+            // Enable copy button
+            copyBtn.disabled = false;
+            
+            // Add to logs
+            addLog('POST', '/api/passwords/generate', 'Пароль сгенерирован');
+          } else {
+            showAlert('Ошибка API', data.error, 'error');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          showAlert('Ошибка', 'Не удалось подключиться к серверу', 'error');
+          // Fallback to client-side generation
+          generatePasswordLocally();
+        }
+      }
+
+      // Generate multiple passwords
+      async function generateMultiplePasswords() {
+        const length = parseInt(lengthInput.value);
+        const includeUpper = uppercaseCheckbox.checked;
+        const includeLower = lowercaseCheckbox.checked;
+        const includeNumbers = numbersCheckbox.checked;
+        const includeSymbols = symbolsCheckbox.checked;
+
+        // Validation
+        if (!includeUpper && !includeLower && !includeNumbers && !includeSymbols) {
+          showAlert('Ошибка', 'Выберите хотя бы один тип символов!', 'error');
+          return;
+        }
+
+        if (length < 8 || length > 128) {
+          showAlert('Ошибка', 'Длина пароля должна быть от 8 до 128 символов.', 'error');
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/passwords/bulk', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              count: 5,
+              length: length,
+              uppercase: includeUpper,
+              lowercase: includeLower,
+              numbers: includeNumbers,
+              symbols: includeSymbols
+            })
+          });
+
+          const data = await response.json();
+          
+          if (data.success) {
+            resultDiv.textContent = 'Сгенерировано несколько паролей:';
+            multipleResultsDiv.innerHTML = '';
+            
+            data.passwords.forEach((password, index) => {
+              const passwordDiv = document.createElement('div');
+              passwordDiv.className = 'password-item';
+              passwordDiv.innerHTML = `
+                <div>
+                  <strong>Пароль ${index + 1}:</strong><br>
+                  <code>${password}</code>
+                </div>
+                <button class="copy-small-btn" data-password="${password}">
+                  <i class="far fa-copy"></i> Копировать
+                </button>
+              `;
+              multipleResultsDiv.appendChild(passwordDiv);
+            });
+
+            // Add event listeners to copy buttons
+            document.querySelectorAll('.copy-small-btn').forEach(btn => {
+              btn.addEventListener('click', function() {
+                navigator.clipboard.writeText(this.getAttribute('data-password'))
+                  .then(() => {
+                    showAlert('Успех', 'Пароль скопирован в буфер обмена!', 'success');
+                  });
+              });
+            });
+
+            // Update strength with first password
+            updatePasswordStrength(data.passwords[0]);
+            
+            // Disable main copy button
+            copyBtn.disabled = true;
+            
+            // Add to logs
+            addLog('POST', '/api/passwords/bulk', 'Сгенерировано 5 паролей');
+          } else {
+            showAlert('Ошибка API', data.error, 'error');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          showAlert('Ошибка', 'Не удалось подключиться к серверу', 'error');
+        }
+      }
+
+      // Client-side fallback password generation
+      function generatePasswordLocally() {
+        const length = parseInt(lengthInput.value);
+        const includeUpper = uppercaseCheckbox.checked;
+        const includeLower = lowercaseCheckbox.checked;
+        const includeNumbers = numbersCheckbox.checked;
+        const includeSymbols = symbolsCheckbox.checked;
+
+        let charset = '';
+        if (includeLower) charset += 'abcdefghijklmnopqrstuvwxyz';
+        if (includeUpper) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        if (includeNumbers) charset += '0123456789';
+        if (includeSymbols) charset += '!@#$%^&*()_+-=[]{}|;:,.<>?';
+
+        let password = '';
+        for (let i = 0; i < length; i++) {
+          const randomIndex = Math.floor(Math.random() * charset.length);
+          password += charset[randomIndex];
+        }
+
+        currentPassword = password;
+        resultDiv.textContent = currentPassword;
+        updatePasswordStrength(currentPassword);
+        copyBtn.disabled = false;
+        
+        addLog('CLIENT', 'local-generation', 'Пароль сгенерирован локально');
+      }
+
+      // Copy password to clipboard
+      function copyPassword() {
+        if (!currentPassword) return;
+
+        navigator.clipboard.writeText(currentPassword)
+          .then(() => {
+            showAlert('Успех', 'Пароль скопирован в буфер обмена!', 'success');
+            addLog('CLIENT', 'clipboard', 'Пароль скопирован');
+          })
+          .catch(err => {
+            console.error('Copy failed:', err);
+            showAlert('Ошибка', 'Не удалось скопировать пароль', 'error');
+          });
+      }
+
+      // Test API endpoints
+      async function testAPIEndpoints() {
+        try {
+          // Test GET endpoint
+          const getResponse = await fetch('/api/passwords/generate?length=16&uppercase=true&lowercase=true&numbers=true&symbols=true');
+          const getData = await getResponse.json();
+          
+          // Test POST endpoint
+          const postResponse = await fetch('/api/passwords/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ length: 20, uppercase: true, lowercase: true, numbers: true, symbols: false })
+          });
+          const postData = await postResponse.json();
+          
+          // Test bulk endpoint
+          const bulkResponse = await fetch('/api/passwords/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ count: 3, length: 12, uppercase: true, lowercase: true, numbers: true, symbols: true })
+          });
+          const bulkData = await bulkResponse.json();
+          
+          let message = `
+            <strong>Тестирование API завершено успешно!</strong><br><br>
+            <strong>GET /api/passwords/generate:</strong><br>
+            Пароль: ${getData.password}<br><br>
+            
+            <strong>POST /api/passwords/generate:</strong><br>
+            Пароль: ${postData.password}<br><br>
+            
+            <strong>POST /api/passwords/bulk:</strong><br>
+            Сгенерировано: ${bulkData.passwords.length} паролей<br>
+            Первый пароль: ${bulkData.passwords[0]}
+          `;
+          
+          showAlert('Тест API', message, 'info');
+          
+          addLog('GET', '/api/passwords/generate', 'Тестирование API');
+          addLog('POST', '/api/passwords/generate', 'Тестирование API');
+          addLog('POST', '/api/passwords/bulk', 'Тестирование API');
+        } catch (error) {
+          showAlert('Ошибка тестирования', 'Не удалось протестировать API: ' + error.message, 'error');
+        }
+      }
+
+      // Check server status
+      async function checkServerStatus() {
+        try {
+          const response = await fetch('/api/passwords/health');
+          if (response.ok) {
+            serverStatusDiv.className = 'status-success';
+            serverStatusDiv.innerHTML = '<i class="fas fa-check-circle"></i> Сервер работает нормально';
+          } else {
+            throw new Error('Server responded with ' + response.status);
+          }
+        } catch (error) {
+          serverStatusDiv.className = 'status-error';
+          serverStatusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Сервер недоступен';
+        }
+      }
+
+      // Update password strength indicator
+      function updatePasswordStrength(password) {
+        let strength = 0;
+        
+        // Length check
+        if (password.length >= 12) strength += 25;
+        if (password.length >= 16) strength += 10;
+        
+        // Character variety checks
+        if (/[A-Z]/.test(password)) strength += 20;
+        if (/[a-z]/.test(password)) strength += 20;
+        if (/[0-9]/.test(password)) strength += 20;
+        if (/[^A-Za-z0-9]/.test(password)) strength += 15;
+        
+        // Clamp to 100%
+        strength = Math.min(strength, 100);
+        
+        // Update UI
+        strengthBar.style.width = `${strength}%`;
+        
+        // Update text and color
+        let strengthLevel, color;
+        if (strength < 40) {
+          strengthLevel = 'Слабый';
+          color = '#ff6b6b';
+        } else if (strength < 70) {
+          strengthLevel = 'Средний';
+          color = '#feca57';
+        } else if (strength < 90) {
+          strengthLevel = 'Хороший';
+          color = '#48dbfb';
+        } else {
+          strengthLevel = 'Отличный';
+          color = '#1dd1a1';
+        }
+        
+        strengthText.textContent = strengthLevel;
+        strengthBar.style.background = color;
+      }
+
+      // Add log entry
+      function addLog(method, endpoint, message) {
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = document.createElement('div');
+        logEntry.className = 'log-entry';
+        logEntry.innerHTML = `
+          <span class="log-time">${timestamp}</span>
+          <span class="log-method ${method.toLowerCase()}">${method}</span>
+          <span class="log-endpoint">${endpoint}</span>
+          <span class="log-message">${message}</span>
+        `;
+        
+        logsDiv.insertBefore(logEntry, logsDiv.firstChild);
+        
+        // Keep only last 10 logs
+        if (logsDiv.children.length > 10) {
+          logsDiv.removeChild(logsDiv.lastChild);
+        }
+      }
+
+      // Show alert
+      function showAlert(title, message, type = 'info') {
+        // Remove existing alerts
+        const existingAlert = document.querySelector('.custom-alert');
+        if (existingAlert) {
+          existingAlert.remove();
+        }
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `custom-alert alert-${type}`;
+        alertDiv.innerHTML = `
+          <div class="alert-content">
+            <h4>${title}</h4>
+            <p>${message}</p>
+            <button class="alert-close">&times;</button>
+          </div>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // Add styles for alert
+        const style = document.createElement('style');
+        style.textContent = `
+          .custom-alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            min-width: 300px;
+            max-width: 500px;
+            border-radius: 8px;
+            padding: 15px;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          }
+          
+          .alert-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+          }
+          
+          .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+          }
+          
+          .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+          }
+          
+          .alert-content {
+            position: relative;
+          }
+          
+          .alert-content h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+          }
+          
+          .alert-close {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: rgba(0,0,0,0.2);
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          
+          @keyframes slideIn {
+            from {
+              transform: translateX(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+        `;
+        
+        document.head.appendChild(style);
+        
+        // Close button
+        alertDiv.querySelector('.alert-close').addEventListener('click', () => {
+          alertDiv.remove();
+        });
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+          if (alertDiv.parentNode) {
+            alertDiv.remove();
+          }
+        }, 5000);
+      }
+
+
+      // Initial password generation
+      generatePasswordLocally();
+    });
+  </script>
 </body>
 </html>
