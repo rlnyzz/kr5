@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Генератор паролей - Express App</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1><i class="fas fa-key"></i> Генератор паролей</h1>
+      <p class="subtitle">Express.js приложение с REST API</p>
+    </header>
+
+    <main>
+      <section class="generator-section">
+        <h2><i class="fas fa-cogs"></i> Генерация пароля</h2>
+        
+        <div class="form-group">
+          <label for="length">Длина пароля (8–128):</label>
+          <div class="input-with-button">
+            <input type="number" id="length" min="8" max="128" value="12" />
+            <button id="random-length" class="small-btn" title="Случайная длина">
+              <i class="fas fa-random"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="options">
+          <div class="option-group">
+            <h3>Типы символов:</h3>
+            <label class="checkbox-label">
+              <input type="checkbox" id="uppercase" checked />
+              <span class="checkmark"></span>
+              <i class="fas fa-font"></i> Заглавные буквы (A-Z)
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="lowercase" checked />
+              <span class="checkmark"></span>
+              <i class="fas fa-font"></i> Строчные буквы (a-z)
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="numbers" checked />
+              <span class="checkmark"></span>
+              <i class="fas fa-hashtag"></i> Цифры (0-9)
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="symbols" />
+              <span class="checkmark"></span>
+              <i class="fas fa-asterisk"></i> Спецсимволы (!@#$%^&*)
+            </label>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button id="generate-btn" class="btn-primary">
+            <i class="fas fa-bolt"></i> Сгенерировать
+          </button>
+          <button id="generate-multiple-btn" class="btn-secondary">
+            <i class="fas fa-copy"></i> 5 паролей
+          </button>
+          <button id="copy-btn" class="btn-success" disabled>
+            <i class="far fa-copy"></i> Копировать
+          </button>
+          <button id="api-test-btn" class="btn-info">
+            <i class="fas fa-code"></i> Тест API
+          </button>
+        </div>
+
+        <div class="result-section">
+          <h3><i class="fas fa-key"></i> Сгенерированный пароль:</h3>
+          <div id="result" class="password-display">
+            Нажмите "Сгенерировать"
+          </div>
+          <div id="multiple-results" class="multiple-passwords"></div>
+          
+          <div class="password-strength">
+            <h3><i class="fas fa-shield-alt"></i> Сложность пароля:</h3>
+            <div class="strength-meter">
+              <div class="strength-bar" id="strength-bar"></div>
+            </div>
+            <p id="strength-text">Средняя</p>
+          </div>
+        </div>
+
+        <div class="api-info">
+          <h3><i class="fas fa-plug"></i> REST API Endpoints:</h3>
+          <div class="endpoints">
+            <div class="endpoint">
+              <span class="method get">GET</span>
+              <code>/api/passwords/generate?length=12&uppercase=true...</code>
+            </div>
+            <div class="endpoint">
+              <span class="method post">POST</span>
+              <code>/api/passwords/generate</code>
+              <small>Body: { "length": 12, "uppercase": true, ... }</small>
+            </div>
+            <div class="endpoint">
+              <span class="method post">POST</span>
+              <code>/api/passwords/bulk</code>
+              <small>Body: { "count": 5, "length": 12, ... }</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="server-info">
+        <h2><i class="fas fa-server"></i> Информация о сервере</h2>
+        <div id="server-status" class="status-loading">
+          <i class="fas fa-spinner fa-spin"></i> Проверка состояния сервера...
+        </div>
+        <div id="logs-section" class="logs">
+          <h3><i class="fas fa-clipboard-list"></i> Логи запросов:</h3>
+          <div id="logs"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Express.js приложение "Генератор паролей" &copy; 2024</p>
+      <p class="github-link">
+        <i class="fab fa-github"></i> 
+        <a href="#" id="github-link">Репозиторий GitHub</a>
+      </p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
