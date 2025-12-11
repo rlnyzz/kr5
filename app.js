@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // DOM Elements
+  // DOM элементы
   const lengthInput = document.getElementById('length');
   const randomLengthBtn = document.getElementById('random-length');
   const uppercaseCheckbox = document.getElementById('uppercase');
@@ -16,19 +16,25 @@ document.addEventListener('DOMContentLoaded', function() {
   const strengthText = document.getElementById('strength-text');
   const serverStatusDiv = document.getElementById('server-status');
   const logsDiv = document.getElementById('logs');
-  const githubLink = document.getElementById('github-link');
+  const alertContainer = document.getElementById('alert-container');
 
-  // State
+  // Состояние
   let currentPassword = '';
-  let logs = [];
+  let isServerAvailable = false;
 
-  // Initialize
+  // Инициализация
   checkServerStatus();
-  updateGithubLink();
+  
+  // Генерация начального пароля
+  setTimeout(() => {
+    generatePasswordLocally();
+  }, 500);
 
-  // Event Listeners
+  // Обработчики событий
   randomLengthBtn.addEventListener('click', () => {
-    lengthInput.value = Math.floor(Math.random() * (128 - 8 + 1)) + 8;
+    const randomLength = Math.floor(Math.random() * (128 - 8 + 1)) + 8;
+    lengthInput.value = randomLength;
+    addLog('CLIENT', 'random-length', `Установлена случайная длина: ${randomLength}`);
   });
 
   generateBtn.addEventListener('click', generatePassword);
@@ -36,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
   copyBtn.addEventListener('click', copyPassword);
   apiTestBtn.addEventListener('click', testAPIEndpoints);
 
-  // Generate single password
+  // Генерация одного пароля
   async function generatePassword() {
     const length = parseInt(lengthInput.value);
     const includeUpper = uppercaseCheckbox.checked;
@@ -44,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const includeNumbers = numbersCheckbox.checked;
     const includeSymbols = symbolsCheckbox.checked;
 
-    // Validation
+    // Валидация
     if (!includeUpper && !includeLower && !includeNumbers && !includeSymbols) {
       showAlert('Ошибка', 'Выберите хотя бы один тип символов!', 'error');
       return;
@@ -55,129 +61,47 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    try {
-      // Generate password via API
-      const response = await fetch('/api/passwords/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          length: length,
-          uppercase: includeUpper,
-          lowercase: includeLower,
-          numbers: includeNumbers,
-          symbols: includeSymbols
-        })
-      });
+    addLog('CLIENT', 'generate-password', `Запрос пароля длиной ${length}`);
 
-      const data = await response.json();
-      
-      if (data.success) {
-        currentPassword = data.password;
-        resultDiv.textContent = currentPassword;
-        multipleResultsDiv.innerHTML = '';
+    // Если сервер доступен, используем API
+    if (isServerAvailable) {
+      try {
+        const response = await fetch('/api/passwords/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            length: length,
+            uppercase: includeUpper,
+            lowercase: includeLower,
+            numbers: includeNumbers,
+            symbols: includeSymbols
+          })
+        });
+
+        const data = await response.json();
         
-        // Update password strength
-        updatePasswordStrength(currentPassword);
-        
-        // Enable copy button
-        copyBtn.disabled = false;
-        
-        // Add to logs
-        addLog('POST', '/api/passwords/generate', 'Пароль сгенерирован');
-      } else {
-        showAlert('Ошибка API', data.error, 'error');
+        if (data.success) {
+          handlePasswordGenerated(data.password, data.length, 'API');
+          addLog('POST', '/api/passwords/generate', `Сгенерирован пароль через API (${length} символов)`);
+        } else {
+          showAlert('Ошибка API', data.error, 'error');
+          generatePasswordLocally();
+        }
+      } catch (error) {
+        console.error('Ошибка подключения к API:', error);
+        isServerAvailable = false;
+        updateServerStatus();
+        generatePasswordLocally();
       }
-    } catch (error) {
-      console.error('Error:', error);
-      showAlert('Ошибка', 'Не удалось подключиться к серверу', 'error');
-      // Fallback to client-side generation
+    } else {
+      // Используем локальную генерацию
       generatePasswordLocally();
     }
   }
 
-  // Generate multiple passwords
-  async function generateMultiplePasswords() {
-    const length = parseInt(lengthInput.value);
-    const includeUpper = uppercaseCheckbox.checked;
-    const includeLower = lowercaseCheckbox.checked;
-    const includeNumbers = numbersCheckbox.checked;
-    const includeSymbols = symbolsCheckbox.checked;
-
-    // Validation
-    if (!includeUpper && !includeLower && !includeNumbers && !includeSymbols) {
-      showAlert('Ошибка', 'Выберите хотя бы один тип символов!', 'error');
-      return;
-    }
-
-    if (length < 8 || length > 128) {
-      showAlert('Ошибка', 'Длина пароля должна быть от 8 до 128 символов.', 'error');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/passwords/bulk', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          count: 5,
-          length: length,
-          uppercase: includeUpper,
-          lowercase: includeLower,
-          numbers: includeNumbers,
-          symbols: includeSymbols
-        })
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        resultDiv.textContent = 'Сгенерировано несколько паролей:';
-        multipleResultsDiv.innerHTML = '';
-        
-        data.passwords.forEach((password, index) => {
-          const passwordDiv = document.createElement('div');
-          passwordDiv.className = 'password-item';
-          passwordDiv.innerHTML = `
-            <strong>Пароль ${index + 1}:</strong> ${password}
-            <button class="copy-small-btn" data-password="${password}">
-              <i class="far fa-copy"></i>
-            </button>
-          `;
-          multipleResultsDiv.appendChild(passwordDiv);
-        });
-
-        // Add event listeners to copy buttons
-        document.querySelectorAll('.copy-small-btn').forEach(btn => {
-          btn.addEventListener('click', function() {
-            navigator.clipboard.writeText(this.getAttribute('data-password'))
-              .then(() => {
-                showAlert('Успех', 'Пароль скопирован в буфер обмена!', 'success');
-              });
-          });
-        });
-
-        // Update strength with first password
-        updatePasswordStrength(data.passwords[0]);
-        
-        // Disable main copy button
-        copyBtn.disabled = true;
-        
-        // Add to logs
-        addLog('POST', '/api/passwords/bulk', 'Сгенерировано 5 паролей');
-      } else {
-        showAlert('Ошибка API', data.error, 'error');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      showAlert('Ошибка', 'Не удалось подключиться к серверу', 'error');
-    }
-  }
-
-  // Client-side fallback password generation
+  // Локальная генерация пароля
   function generatePasswordLocally() {
     const length = parseInt(lengthInput.value);
     const includeUpper = uppercaseCheckbox.checked;
@@ -197,22 +121,168 @@ document.addEventListener('DOMContentLoaded', function() {
       password += charset[randomIndex];
     }
 
-    currentPassword = password;
-    resultDiv.textContent = currentPassword;
-    updatePasswordStrength(currentPassword);
-    copyBtn.disabled = false;
-    
-    addLog('CLIENT', 'local-generation', 'Пароль сгенерирован локально');
+    handlePasswordGenerated(password, length, 'локальная генерация');
+    addLog('CLIENT', 'local-generation', `Сгенерирован пароль локально (${length} символов)`);
   }
 
-  // Copy password to clipboard
+  // Обработка сгенерированного пароля
+  function handlePasswordGenerated(password, length, source) {
+    currentPassword = password;
+    resultDiv.textContent = password;
+    resultDiv.title = `Сгенерировано через: ${source}`;
+    resultDiv.style.color = '#2c3e50';
+    multipleResultsDiv.innerHTML = '';
+    
+    // Обновляем сложность пароля
+    updatePasswordStrength(password);
+    
+    // Активируем кнопку копирования
+    copyBtn.disabled = false;
+  }
+
+  // Генерация нескольких паролей
+  async function generateMultiplePasswords() {
+    const length = parseInt(lengthInput.value);
+    const includeUpper = uppercaseCheckbox.checked;
+    const includeLower = lowercaseCheckbox.checked;
+    const includeNumbers = numbersCheckbox.checked;
+    const includeSymbols = symbolsCheckbox.checked;
+
+    // Валидация
+    if (!includeUpper && !includeLower && !includeNumbers && !includeSymbols) {
+      showAlert('Ошибка', 'Выберите хотя бы один тип символов!', 'error');
+      return;
+    }
+
+    if (length < 8 || length > 128) {
+      showAlert('Ошибка', 'Длина пароля должна быть от 8 до 128 символов.', 'error');
+      return;
+    }
+
+    addLog('CLIENT', 'generate-multiple', `Запрос 5 паролей длиной ${length}`);
+
+    // Если сервер доступен, используем API
+    if (isServerAvailable) {
+      try {
+        const response = await fetch('/api/passwords/bulk', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            count: 5,
+            length: length,
+            uppercase: includeUpper,
+            lowercase: includeLower,
+            numbers: includeNumbers,
+            symbols: includeSymbols
+          })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          handleMultiplePasswordsGenerated(data.passwords, data.length, 'API');
+          addLog('POST', '/api/passwords/bulk', `Сгенерировано 5 паролей через API`);
+        } else {
+          showAlert('Ошибка API', data.error, 'error');
+          generateMultiplePasswordsLocally();
+        }
+      } catch (error) {
+        console.error('Ошибка подключения к API:', error);
+        isServerAvailable = false;
+        updateServerStatus();
+        generateMultiplePasswordsLocally();
+      }
+    } else {
+      // Используем локальную генерацию
+      generateMultiplePasswordsLocally();
+    }
+  }
+
+  // Локальная генерация нескольких паролей
+  function generateMultiplePasswordsLocally() {
+    const length = parseInt(lengthInput.value);
+    const includeUpper = uppercaseCheckbox.checked;
+    const includeLower = lowercaseCheckbox.checked;
+    const includeNumbers = numbersCheckbox.checked;
+    const includeSymbols = symbolsCheckbox.checked;
+
+    let charset = '';
+    if (includeLower) charset += 'abcdefghijklmnopqrstuvwxyz';
+    if (includeUpper) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    if (includeNumbers) charset += '0123456789';
+    if (includeSymbols) charset += '!@#$%^&*()_+-=[]{}|;:,.<>?';
+
+    const passwords = [];
+    for (let i = 0; i < 5; i++) {
+      let password = '';
+      for (let j = 0; j < length; j++) {
+        const randomIndex = Math.floor(Math.random() * charset.length);
+        password += charset[randomIndex];
+      }
+      passwords.push(password);
+    }
+
+    handleMultiplePasswordsGenerated(passwords, length, 'локальная генерация');
+    addLog('CLIENT', 'local-multiple-generation', `Сгенерировано 5 паролей локально`);
+  }
+
+  // Обработка нескольких сгенерированных паролей
+  function handleMultiplePasswordsGenerated(passwords, length, source) {
+    resultDiv.textContent = `Сгенерировано 5 паролей (${source}):`;
+    resultDiv.style.color = '#2c3e50';
+    multipleResultsDiv.innerHTML = '';
+    
+    passwords.forEach((password, index) => {
+      const passwordDiv = document.createElement('div');
+      passwordDiv.className = 'password-item';
+      passwordDiv.innerHTML = `
+        <div>
+          <strong>Пароль ${index + 1}:</strong><br>
+          <code style="font-family: 'Courier New', monospace;">${password}</code>
+        </div>
+        <button class="copy-small-btn" data-password="${password}">
+          <i class="far fa-copy"></i> Копировать
+        </button>
+      `;
+      multipleResultsDiv.appendChild(passwordDiv);
+    });
+
+    // Добавляем обработчики для кнопок копирования
+    document.querySelectorAll('.copy-small-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const passwordToCopy = this.getAttribute('data-password');
+        navigator.clipboard.writeText(passwordToCopy)
+          .then(() => {
+            showAlert('Успех', 'Пароль скопирован в буфер обмена!', 'success');
+          })
+          .catch(err => {
+            console.error('Copy failed:', err);
+            showAlert('Ошибка', 'Не удалось скопировать пароль', 'error');
+          });
+      });
+    });
+
+    // Обновляем сложность первого пароля
+    updatePasswordStrength(passwords[0]);
+    
+    // Деактивируем основную кнопку копирования
+    copyBtn.disabled = true;
+    currentPassword = '';
+  }
+
+  // Копирование пароля в буфер обмена
   function copyPassword() {
-    if (!currentPassword) return;
+    if (!currentPassword) {
+      showAlert('Ошибка', 'Нет пароля для копирования', 'error');
+      return;
+    }
 
     navigator.clipboard.writeText(currentPassword)
       .then(() => {
         showAlert('Успех', 'Пароль скопирован в буфер обмена!', 'success');
-        addLog('CLIENT', 'clipboard', 'Пароль скопирован');
+        addLog('CLIENT', 'clipboard', 'Пароль скопирован в буфер обмена');
       })
       .catch(err => {
         console.error('Copy failed:', err);
@@ -220,89 +290,115 @@ document.addEventListener('DOMContentLoaded', function() {
       });
   }
 
-  // Test API endpoints
+  // Тестирование API эндпоинтов
   async function testAPIEndpoints() {
+    addLog('CLIENT', 'api-test', 'Начало тестирования API');
+    
     try {
-      // Test GET endpoint
+      showAlert('Информация', 'Начинаю тестирование API...', 'info');
+      
+      // Тест 1: GET запрос
       const getResponse = await fetch('/api/passwords/generate?length=16&uppercase=true&lowercase=true&numbers=true&symbols=true');
       const getData = await getResponse.json();
       
-      // Test POST endpoint
+      // Тест 2: POST запрос
       const postResponse = await fetch('/api/passwords/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ length: 20, uppercase: true, lowercase: true, numbers: true, symbols: false })
+        body: JSON.stringify({ 
+          length: 20, 
+          uppercase: true, 
+          lowercase: true, 
+          numbers: true, 
+          symbols: false 
+        })
       });
       const postData = await postResponse.json();
       
-      // Test bulk endpoint
+      // Тест 3: Bulk запрос
       const bulkResponse = await fetch('/api/passwords/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ count: 3, length: 12, uppercase: true, lowercase: true, numbers: true, symbols: true })
+        body: JSON.stringify({ 
+          count: 3, 
+          length: 12, 
+          uppercase: true, 
+          lowercase: true, 
+          numbers: true, 
+          symbols: true 
+        })
       });
       const bulkData = await bulkResponse.json();
       
-      let message = `
-        <strong>Тестирование API завершено успешно!</strong><br><br>
-        <strong>GET /api/passwords/generate:</strong><br>
-        Пароль: ${getData.password}<br><br>
-        
-        <strong>POST /api/passwords/generate:</strong><br>
-        Пароль: ${postData.password}<br><br>
-        
-        <strong>POST /api/passwords/bulk:</strong><br>
-        Сгенерировано: ${bulkData.passwords.length} паролей<br>
-        Первый пароль: ${bulkData.passwords[0]}
-      `;
+      let message = `✅ Тестирование API завершено успешно!<br><br>
+        <strong>GET запрос:</strong> ${getData.success ? '✓ Успешно' : '✗ Ошибка'}<br>
+        <strong>POST запрос:</strong> ${postData.success ? '✓ Успешно' : '✗ Ошибка'}<br>
+        <strong>BULK запрос:</strong> ${bulkData.success ? '✓ Успешно' : '✗ Ошибка'}<br><br>
+        Все три эндпоинта работают корректно!`;
       
-      showAlert('Тест API', message, 'info');
+      showAlert('Тест API', message, 'success');
       
-      addLog('GET', '/api/passwords/generate', 'Тестирование API');
-      addLog('POST', '/api/passwords/generate', 'Тестирование API');
-      addLog('POST', '/api/passwords/bulk', 'Тестирование API');
+      addLog('GET', '/api/passwords/generate', 'Тестирование GET запроса');
+      addLog('POST', '/api/passwords/generate', 'Тестирование POST запроса');
+      addLog('POST', '/api/passwords/bulk', 'Тестирование BULK запроса');
     } catch (error) {
       showAlert('Ошибка тестирования', 'Не удалось протестировать API: ' + error.message, 'error');
+      addLog('ERROR', 'api-test', 'Ошибка тестирования API');
     }
   }
 
-  // Check server status
+  // Проверка статуса сервера
   async function checkServerStatus() {
     try {
       const response = await fetch('/api/passwords/health');
       if (response.ok) {
+        isServerAvailable = true;
         serverStatusDiv.className = 'status-success';
         serverStatusDiv.innerHTML = '<i class="fas fa-check-circle"></i> Сервер работает нормально';
+        addLog('GET', '/api/passwords/health', 'Сервер доступен');
       } else {
         throw new Error('Server responded with ' + response.status);
       }
     } catch (error) {
+      isServerAvailable = false;
       serverStatusDiv.className = 'status-error';
-      serverStatusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Сервер недоступен';
+      serverStatusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Сервер недоступен. Используется локальная генерация.';
+      addLog('ERROR', '/api/passwords/health', 'Сервер недоступен');
     }
   }
 
-  // Update password strength indicator
+  // Обновление статуса сервера в UI
+  function updateServerStatus() {
+    if (isServerAvailable) {
+      serverStatusDiv.className = 'status-success';
+      serverStatusDiv.innerHTML = '<i class="fas fa-check-circle"></i> Сервер работает нормально';
+    } else {
+      serverStatusDiv.className = 'status-error';
+      serverStatusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Сервер недоступен. Используется локальная генерация.';
+    }
+  }
+
+  // Обновление индикатора сложности пароля
   function updatePasswordStrength(password) {
     let strength = 0;
     
-    // Length check
+    // Проверка длины
     if (password.length >= 12) strength += 25;
     if (password.length >= 16) strength += 10;
     
-    // Character variety checks
+    // Проверка разнообразия символов
     if (/[A-Z]/.test(password)) strength += 20;
     if (/[a-z]/.test(password)) strength += 20;
     if (/[0-9]/.test(password)) strength += 20;
     if (/[^A-Za-z0-9]/.test(password)) strength += 15;
     
-    // Clamp to 100%
+    // Ограничение до 100%
     strength = Math.min(strength, 100);
     
-    // Update UI
+    // Обновление UI
     strengthBar.style.width = `${strength}%`;
     
-    // Update text and color
+    // Обновление текста и цвета
     let strengthLevel, color;
     if (strength < 40) {
       strengthLevel = 'Слабый';
@@ -322,139 +418,58 @@ document.addEventListener('DOMContentLoaded', function() {
     strengthBar.style.background = color;
   }
 
-  // Add log entry
+  // Добавление записи в лог
   function addLog(method, endpoint, message) {
-    const timestamp = new Date().toLocaleTimeString();
+    const timestamp = new Date().toLocaleTimeString('ru-RU');
     const logEntry = document.createElement('div');
     logEntry.className = 'log-entry';
+    
+    // Определяем цвет метода
+    let methodColor = '#495057';
+    if (method === 'GET') methodColor = '#61affe';
+    if (method === 'POST') methodColor = '#49cc90';
+    if (method === 'CLIENT') methodColor = '#fca120';
+    if (method === 'ERROR') methodColor = '#ff6b6b';
+    
     logEntry.innerHTML = `
       <span class="log-time">${timestamp}</span>
-      <span class="log-method ${method.toLowerCase()}">${method}</span>
+      <span class="log-method" style="color: ${methodColor}">${method}</span>
       <span class="log-endpoint">${endpoint}</span>
       <span class="log-message">${message}</span>
     `;
     
     logsDiv.insertBefore(logEntry, logsDiv.firstChild);
     
-    // Keep only last 10 logs
+    // Оставляем только последние 10 записей
     if (logsDiv.children.length > 10) {
       logsDiv.removeChild(logsDiv.lastChild);
     }
   }
 
-  // Show alert
+  // Показать уведомление
   function showAlert(title, message, type = 'info') {
-    // Remove existing alerts
-    const existingAlert = document.querySelector('.custom-alert');
-    if (existingAlert) {
-      existingAlert.remove();
-    }
-    
     const alertDiv = document.createElement('div');
-    alertDiv.className = `custom-alert alert-${type}`;
+    alertDiv.className = `alert alert-${type}`;
     alertDiv.innerHTML = `
-      <div class="alert-content">
-        <h4>${title}</h4>
-        <p>${message}</p>
-        <button class="alert-close">&times;</button>
+      <div>
+        <strong>${title}</strong><br>
+        ${message}
       </div>
+      <button class="alert-close">&times;</button>
     `;
     
-    document.body.appendChild(alertDiv);
+    alertContainer.appendChild(alertDiv);
     
-    // Add styles
-    const style = document.createElement('style');
-    style.textContent = `
-      .custom-alert {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1000;
-        min-width: 300px;
-        max-width: 500px;
-        border-radius: 8px;
-        padding: 15px;
-        animation: slideIn 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      }
-      
-      .alert-error {
-        background: #f8d7da;
-        border: 1px solid #f5c6cb;
-        color: #721c24;
-      }
-      
-      .alert-success {
-        background: #d4edda;
-        border: 1px solid #c3e6cb;
-        color: #155724;
-      }
-      
-      .alert-info {
-        background: #d1ecf1;
-        border: 1px solid #bee5eb;
-        color: #0c5460;
-      }
-      
-      .alert-content {
-        position: relative;
-      }
-      
-      .alert-content h4 {
-        margin-top: 0;
-        margin-bottom: 10px;
-      }
-      
-      .alert-close {
-        position: absolute;
-        top: -10px;
-        right: -10px;
-        background: rgba(0,0,0,0.2);
-        border: none;
-        border-radius: 50%;
-        width: 25px;
-        height: 25px;
-        color: white;
-        font-size: 18px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      
-      @keyframes slideIn {
-        from {
-          transform: translateX(100%);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
-      }
-    `;
-    
-    document.head.appendChild(style);
-    
-    // Close button
+    // Кнопка закрытия
     alertDiv.querySelector('.alert-close').addEventListener('click', () => {
       alertDiv.remove();
     });
     
-    // Auto-remove after 5 seconds
+    // Автоматическое удаление через 5 секунд
     setTimeout(() => {
       if (alertDiv.parentNode) {
         alertDiv.remove();
       }
     }, 5000);
   }
-
-  // Update GitHub link
-  function updateGithubLink() {
-    // You should update this with your actual GitHub repository URL
-    githubLink.href = 'https://github.com/yourusername/password-generator-express';
-  }
-
-  // Initial password generation
-  generatePasswordLocally();
 });
